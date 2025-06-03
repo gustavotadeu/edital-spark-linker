@@ -1,20 +1,22 @@
-
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Download } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import FileUpload from '@/components/FileUpload';
 import WebhookConfig from '@/components/WebhookConfig';
-import ResultDisplay from '@/components/ResultDisplay';
+import ProjectNameInput from '@/components/ProjectNameInput';
 import { generateTemplateExcel } from '@/utils/templateUtils';
+import { config } from '@/config/config';
 
 const Index = () => {
-  const [webhookUrl, setWebhookUrl] = useState('');
+  const [webhookUrl, setWebhookUrl] = useState(config.defaultWebhookUrl);
+  const [projectName, setProjectName] = useState('');
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [resultLink, setResultLink] = useState<string | null>(null);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const handleDownloadTemplate = () => {
     try {
@@ -35,15 +37,14 @@ const Index = () => {
 
   const handleFileUpload = (file: File) => {
     setUploadedFile(file);
-    setResultLink(null); // Reset previous results
     console.log('Arquivo carregado:', file.name);
   };
 
   const handleSendFile = async () => {
-    if (!uploadedFile || !webhookUrl) {
+    if (!uploadedFile || !webhookUrl || !projectName.trim()) {
       toast({
         title: "Erro",
-        description: "Por favor, carregue um arquivo e configure a URL do webhook.",
+        description: "Por favor, preencha o nome do projeto, carregue um arquivo e configure a URL do webhook.",
         variant: "destructive",
       });
       return;
@@ -56,6 +57,8 @@ const Index = () => {
       const formData = new FormData();
       formData.append('file', uploadedFile);
       formData.append('timestamp', new Date().toISOString());
+      formData.append('project_name', projectName.trim());
+      formData.append('filename', uploadedFile.name);
 
       const response = await fetch(webhookUrl, {
         method: 'POST',
@@ -66,13 +69,20 @@ const Index = () => {
         const data = await response.json();
         console.log('Resposta do webhook:', data);
         
-        // Assuming the webhook returns a link in the response
         if (data.link || data.url || data.result_link) {
           const link = data.link || data.url || data.result_link;
-          setResultLink(link);
+          
+          // Navigate to result page with the link and project name
+          navigate('/result', { 
+            state: { 
+              link, 
+              projectName: projectName.trim() 
+            } 
+          });
+          
           toast({
-            title: "Processamento concluído!",
-            description: "A análise foi realizada com sucesso.",
+            title: "Processamento iniciado!",
+            description: "Redirecionando para a página de acompanhamento.",
           });
         } else {
           throw new Error('Link não encontrado na resposta');
@@ -127,6 +137,9 @@ const Index = () => {
           </CardContent>
         </Card>
 
+        {/* Project Name Input */}
+        <ProjectNameInput projectName={projectName} setProjectName={setProjectName} />
+
         {/* Webhook Configuration */}
         <WebhookConfig webhookUrl={webhookUrl} setWebhookUrl={setWebhookUrl} />
 
@@ -134,13 +147,18 @@ const Index = () => {
         <FileUpload onFileUpload={handleFileUpload} />
 
         {/* Send Button */}
-        {uploadedFile && webhookUrl && (
+        {uploadedFile && webhookUrl && projectName.trim() && (
           <Card className="shadow-lg">
             <CardContent className="pt-6">
               <div className="text-center space-y-4">
-                <p className="text-gray-600">
-                  Arquivo pronto: <span className="font-medium">{uploadedFile.name}</span>
-                </p>
+                <div className="space-y-2">
+                  <p className="text-gray-600">
+                    Projeto: <span className="font-medium">{projectName}</span>
+                  </p>
+                  <p className="text-gray-600">
+                    Arquivo: <span className="font-medium">{uploadedFile.name}</span>
+                  </p>
+                </div>
                 <Button 
                   onClick={handleSendFile}
                   disabled={isProcessing}
@@ -160,18 +178,15 @@ const Index = () => {
               <div className="text-center space-y-4">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#005AFF] mx-auto"></div>
                 <p className="text-lg font-medium text-[#005AFF]">
-                  Analisando seu arquivo...
+                  Enviando arquivo...
                 </p>
                 <p className="text-gray-600">
-                  Este processo pode levar alguns minutos
+                  Aguarde enquanto processamos sua solicitação
                 </p>
               </div>
             </CardContent>
           </Card>
         )}
-
-        {/* Result Display */}
-        {resultLink && <ResultDisplay link={resultLink} />}
       </div>
     </div>
   );

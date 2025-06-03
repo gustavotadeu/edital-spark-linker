@@ -1,8 +1,8 @@
-
 import React, { useCallback, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Upload, FileSpreadsheet, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { config } from '@/config/config';
 
 interface FileUploadProps {
   onFileUpload: (file: File) => void;
@@ -14,12 +14,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileUpload }) => {
   const { toast } = useToast();
 
   const validateFile = (file: File): boolean => {
-    const allowedTypes = [
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'application/vnd.ms-excel.sheet.macroEnabled.12'
-    ];
-    
-    if (!allowedTypes.includes(file.type) && !file.name.endsWith('.xlsx')) {
+    if (!config.allowedFileTypes.includes(file.type) && !file.name.endsWith('.xlsx')) {
       toast({
         title: "Arquivo inválido",
         description: "Por favor, envie apenas arquivos Excel (.xlsx).",
@@ -28,7 +23,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileUpload }) => {
       return false;
     }
 
-    if (file.size > 10 * 1024 * 1024) { // 10MB limit
+    if (file.size > config.maxFileSize) {
       toast({
         title: "Arquivo muito grande",
         description: "O arquivo deve ter no máximo 10MB.",
