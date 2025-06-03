@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -5,13 +6,11 @@ import { Button } from '@/components/ui/button';
 import { Download } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import FileUpload from '@/components/FileUpload';
-import WebhookConfig from '@/components/WebhookConfig';
 import ProjectNameInput from '@/components/ProjectNameInput';
 import { generateTemplateExcel } from '@/utils/templateUtils';
 import { config } from '@/config/config';
 
 const Index = () => {
-  const [webhookUrl, setWebhookUrl] = useState(config.defaultWebhookUrl);
   const [projectName, setProjectName] = useState('');
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -41,17 +40,17 @@ const Index = () => {
   };
 
   const handleSendFile = async () => {
-    if (!uploadedFile || !webhookUrl || !projectName.trim()) {
+    if (!uploadedFile || !projectName.trim()) {
       toast({
         title: "Erro",
-        description: "Por favor, preencha o nome do projeto, carregue um arquivo e configure a URL do webhook.",
+        description: "Por favor, preencha o nome do projeto e carregue um arquivo.",
         variant: "destructive",
       });
       return;
     }
 
     setIsProcessing(true);
-    console.log('Enviando arquivo via webhook:', webhookUrl);
+    console.log('Enviando arquivo via webhook:', config.defaultWebhookUrl);
 
     try {
       const formData = new FormData();
@@ -60,7 +59,7 @@ const Index = () => {
       formData.append('project_name', projectName.trim());
       formData.append('filename', uploadedFile.name);
 
-      const response = await fetch(webhookUrl, {
+      const response = await fetch(config.defaultWebhookUrl, {
         method: 'POST',
         body: formData,
       });
@@ -94,7 +93,7 @@ const Index = () => {
       console.error('Erro ao enviar arquivo:', error);
       toast({
         title: "Erro no processamento",
-        description: "Falha ao processar o arquivo. Verifique a URL do webhook e tente novamente.",
+        description: "Falha ao processar o arquivo. Verifique a configuração e tente novamente.",
         variant: "destructive",
       });
     } finally {
@@ -140,14 +139,11 @@ const Index = () => {
         {/* Project Name Input */}
         <ProjectNameInput projectName={projectName} setProjectName={setProjectName} />
 
-        {/* Webhook Configuration */}
-        <WebhookConfig webhookUrl={webhookUrl} setWebhookUrl={setWebhookUrl} />
-
         {/* File Upload */}
         <FileUpload onFileUpload={handleFileUpload} />
 
         {/* Send Button */}
-        {uploadedFile && webhookUrl && projectName.trim() && (
+        {uploadedFile && projectName.trim() && (
           <Card className="shadow-lg">
             <CardContent className="pt-6">
               <div className="text-center space-y-4">
