@@ -7,7 +7,6 @@ import { Download } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import FileUpload from '@/components/FileUpload';
 import ProjectNameInput from '@/components/ProjectNameInput';
-import { generateTemplateExcel } from '@/utils/templateUtils';
 import { config } from '@/config/config';
 
 const Index = () => {
@@ -19,17 +18,23 @@ const Index = () => {
 
   const handleDownloadTemplate = () => {
     try {
-      generateTemplateExcel();
+      const link = document.createElement('a');
+      link.href = config.templateDownloadUrl;
+      link.download = 'template.xlsx';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
       toast({
-        title: "Template baixado!",
-        description: "O arquivo modelo foi baixado com sucesso.",
+        title: 'Template baixado!',
+        description: 'O arquivo modelo foi baixado com sucesso.',
       });
     } catch (error) {
-      console.error('Erro ao gerar template:', error);
+      console.error('Erro ao baixar template:', error);
       toast({
-        title: "Erro",
-        description: "Falha ao gerar o arquivo modelo.",
-        variant: "destructive",
+        title: 'Erro',
+        description: 'Falha ao baixar o arquivo modelo.',
+        variant: 'destructive',
       });
     }
   };
